@@ -11,8 +11,8 @@ FIXED_RANGE=172.31.1.0/24
 FIXED_NETWORK_SIZE=256
 FLAT_INTERFACE=eth0
 PUBLIC_NETWORK_GATEWAY=192.168.20.1
-NETWORK_GATEWAY=10.0.2.1
-HOST_IP=10.0.2.15
+NETWORK_GATEWAY=<%= @ipaddress.rpartition('.')[0] + '.1' %>
+HOST_IP=<%= @ipaddress %>
 
 # Set DevStack install directory
 DEST=/opt/stack
@@ -33,10 +33,12 @@ enable_service s-proxy s-object s-container s-account
 SWIFT_HASH=66a3d6b56c1f479c8b4e70ab5c2000f5
 
 # Enable Ceilometer
+<% if @ceilometer_enabled == 'true' -%>
 enable_service ceilometer-acompute ceilometer-acentral ceilometer-anotification ceilometer-collector ceilometer-api
+<% end -%>
 
 # Using branches
-BRANCH=stable/icehouse
+BRANCH=<%= @version %>
 CINDER_BRANCH=$BRANCH
 GLANCE_BRANCH=$BRANCH
 HORIZON_BRANCH=$BRANCH
