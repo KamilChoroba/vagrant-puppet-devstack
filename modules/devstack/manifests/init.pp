@@ -6,7 +6,9 @@
 #
 # $version:: String to specify which version of devstack should be installed. Default is stable/icehouse
 #
-# $ceilometer_enabled:: Boolean feature switch to enable/disable ceilometer. Default is enabled = true
+# $ceilometer_enabled:: Array containing Strings which services should be enabled. Default is empty
+#
+# $execute_devstack:: boolean string to decide wheter stack.sh should be executed or not. Default is true
 #
 # == Requires:
 #
@@ -20,11 +22,12 @@
 #
 # class { 'devstack':
 #   $version            => 'stable/icehouse',
-#   $ceilometer_enabled => true,
+#   $ceilometer_enabled => ['ceilometer', 'neutron', 'swift'],
+#   $execute_devstack   => 'true',
 # }
 #
-class devstack ($version = 'stable/icehouse', $ceilometer_enabled = 'true') {
-  package { 'git':
+class devstack ($version = 'stable/icehouse', $enabled_components = [], $execute_devstack = 'true') {
+  package { ['git', 'memcached', 'vim']:
     ensure => 'installed',
   }
 
@@ -36,14 +39,38 @@ class devstack ($version = 'stable/icehouse', $ceilometer_enabled = 'true') {
     revision => $version,
     owner    => 'vagrant',
     group    => 'vagrant',
+    require  => Package['git'],
   }
 
   file { 'local.conf':
     ensure  => file,
     path    => '/home/vagrant/devstack/local.conf',
     content => template('devstack/local.conf.erb'),
-    require => Vcsrepo['devstack'],
     owner   => 'vagrant',
     group   => 'vagrant',
+    require => Vcsrepo['devstack'],
   }
+
+  if $execute_devstack == 'true' {
+    exec { 'stack.sh':
+      command     => '/home/vagrant/devstack/stack.sh',
+      cwd         => '/home/vagrant/devstack',
+      environment => ['HOME=/home/vagrant'],
+      group       => 'vagrant',
+      user        => 'vagrant',
+      logoutput   => 'on_failure',
+      timeout     => 0,
+      require     => Package['memcached'],
+    }
+  }
+
+  #  exec { 'unstack.sh':
+  #    command   => '/home/vagrant/devstack/unstack.sh',
+  #    cwd       => '/home/vagrant/devstack',
+  #    group     => 'vagrant',
+  #    user      => 'vagrant',
+  #    logoutput => 'on_failure',
+  #    timeout   => 0,
+  #    before    => Exec['stack.sh'],
+  #  }
 }
